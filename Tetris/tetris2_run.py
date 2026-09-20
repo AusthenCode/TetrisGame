@@ -177,6 +177,7 @@ def initialize(height, width):
     init_board()
 
 def main():
+    global State
     # Pygame related init
     pygame.init()
     screen = pygame.display.set_mode(size)
@@ -216,6 +217,11 @@ def main():
                 if event.key == pygame.K_q:
                     if State == "gameover":
                         done = True
+                if event.key == pygame.K_p:
+                    if State == "start":
+                        State = "paused"
+                    elif State == "paused":
+                        State = "start"
                 if event.key == pygame.K_DOWN:
                     pressing_down = True
 
