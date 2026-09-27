@@ -1,6 +1,24 @@
 import pygame
 import random
 
+#Sound setup (in try /except so missing/ broken audio device)
+#never crashes the game. Small, quiet effects only.
+SoundOn = True
+try:
+    pygame.mixer.init()
+    ClearSound = pygame.mixer.Sound("Tetris/sounds/clear_line.mp3")
+    PauseSound = pygame.mixer.Sound("Tetris/sounds/pause.mp3")
+    ClearSound.set_volume(0.3)
+    PauseSound.set_volume(0.3)
+except Exception:
+    SoundOn = False
+
+def play_sound(sound):
+    # Small helper so every place that wants to play
+    # goes through one safe spot instead of repeating the check.
+    if SoundOn:
+        sound.play()
+    
 # Global constants - it's OK as it's read only
 # code smell - why list when tuple (immutable) is OK? Use immutable objects as much as possible
 Colors = [
@@ -95,6 +113,9 @@ def break_lines():
     Field = [[0] * Width for _ in range(cleared)] + remaining_rows
     Score += cleared ** 2
 
+    if cleared > 0:
+        play_sound(ClearSound)
+        
     # ADDED: Count cleared lines, increase the level, and stop at the goal.
     Lines += cleared
     Level = min(Lines // LINES_PER_LEVEL + 1, MAX_LEVEL)
@@ -220,6 +241,7 @@ def main():
                     move_timer = 0
                 elif event.key == pygame.K_p and State in ("start", "paused"):
                     State = "paused" if State == "start" else "start"
+                    play_sound(PauseSound)
                 elif State == "start":
                     if event.key == pygame.K_UP:
                         rotate()
