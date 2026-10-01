@@ -1,6 +1,24 @@
 import pygame
 import random
 
+#Sound setup (in try /except so missing/ broken audio device)
+#never crashes the game. Small, quiet effects only.
+SoundOn = True
+try:
+    pygame.mixer.init()
+    ClearSound = pygame.mixer.Sound("Tetris/sounds/clear_line.mp3")
+    PauseSound = pygame.mixer.Sound("Tetris/sounds/pause.mp3")
+    ClearSound.set_volume(0.3)
+    PauseSound.set_volume(0.3)
+except Exception:
+    SoundOn = False
+
+def play_sound(sound):
+    # Small helper so every place that wants to play
+    # goes through one safe spot instead of repeating the check.
+    if SoundOn:
+        sound.play()
+    
 # Global constants - it's OK as it's read only
 # code smell - why list when tuple (immutable) is OK? Use immutable objects as much as possible
 Colors = [
@@ -95,6 +113,9 @@ def break_lines():
     Field = [[0] * Width for _ in range(cleared)] + remaining_rows
     Score += cleared ** 2
 
+    if cleared > 0:
+        play_sound(ClearSound)
+        
     # ADDED: Count cleared lines, increase the level, and stop at the goal.
     Lines += cleared
     Level = min(Lines // LINES_PER_LEVEL + 1, MAX_LEVEL)
@@ -186,6 +207,7 @@ def initialize(height, width):
     init_board()
 
 def main():
+    global State
     # Pygame related init
     pygame.init()
     screen = pygame.display.set_mode(size)
@@ -208,14 +230,18 @@ def main():
             if event.type == pygame.QUIT:
                 done = True
             if event.type == pygame.KEYDOWN:
-                # ADDED: Quit any time; restart after winning or losing.
+
+                # Added: Quit any time; restart after winning or losing
                 if event.key in (pygame.K_ESCAPE, pygame.K_q):
                     done = True
-                elif event.key == pygame.K_r and State != "start":
+                elif event.key == pygame.K_r and State in ("gameover", "won", "paused"):
                     initialize(20, 10)
                     make_figure(3, 0)
                     fall_timer = 0
                     move_timer = 0
+                elif event.key == pygame.K_p and State in ("start", "paused"):
+                    State = "paused" if State == "start" else "start"
+                    play_sound(PauseSound)
                 elif State == "start":
                     if event.key == pygame.K_UP:
                         rotate()
@@ -228,12 +254,11 @@ def main():
                     if event.key == pygame.K_SPACE:
                         go_space()
                         fall_timer = 0
-
         if done:
             break
 
         if State == "start":
-            # ADDED: Hold left/right to repeat, with a short initial delay.
+            # Added: Hold left/ right to repeat, with a short initial delay.
             # Rotation and hard drop still happen only once per key press.
             keys = pygame.key.get_pressed()
             move_timer -= elapsed
@@ -242,7 +267,7 @@ def main():
                 go_side(direction)
                 move_timer = 90
 
-            # CHANGED: Hold down for a controlled soft drop; levels get faster.
+            # CHANGED: Hold down for controlled soft drop; levels get faster.
             fall_timer += elapsed
             fall_delay = 60 if keys[pygame.K_DOWN] else FALL_TIMES[Level - 1]
             if fall_timer >= fall_delay:
@@ -270,7 +295,11 @@ def main():
             screen.blit(help_font.render(instruction, True, BLACK), [15, 475 + i * 24])
 
         # CHANGED: Both endings stop play and offer a simple restart.
-        if State != "start":
+        if State == "paused":
+            pygame.draw.rect(screen,WHITE, [30, 205, 340, 90])
+            screen.blit(font.render("Paused", True, BLACK), [150, 215])
+            screen.blit(help_font.render("P: resume  R: restart  Esc/Q: quit", True, BLACK), [60, 255])
+        elif State != "start":
             pygame.draw.rect(screen, WHITE, [30, 205, 340, 90])
             message = "You Win!" if State == "won" else "Game Over"
             screen.blit(font.render(message, True, BLACK), [135, 215])
