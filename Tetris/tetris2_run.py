@@ -115,7 +115,7 @@ def break_lines():
 
     if cleared > 0:
         play_sound(ClearSound)
-        
+
     # ADDED: Count cleared lines, increase the level, and stop at the goal.
     Lines += cleared
     Level = min(Lines // LINES_PER_LEVEL + 1, MAX_LEVEL)
@@ -242,6 +242,9 @@ def main():
                 elif event.key == pygame.K_p and State in ("start", "paused"):
                     State = "paused" if State == "start" else "start"
                     play_sound(PauseSound)
+                elif event.key == pygame.K_m:
+                    global SoundOn
+                    SoundOn = not SoundOn 
                 elif State == "start":
                     if event.key == pygame.K_UP:
                         rotate()
@@ -296,9 +299,10 @@ def main():
 
         # CHANGED: Both endings stop play and offer a simple restart.
         if State == "paused":
-            pygame.draw.rect(screen,WHITE, [30, 205, 340, 90])
+            pygame.draw.rect(screen,WHITE, [30, 205, 340, 110])
             screen.blit(font.render("Paused", True, BLACK), [150, 215])
-            screen.blit(help_font.render("P: resume  R: restart  Esc/Q: quit", True, BLACK), [60, 255])
+            screen.blit(help_font.render("P: resume  R: restart", True, BLACK), [90, 255])
+            screen.blit(help_font.render("M: sound  Esc/Q: quit", True, BLACK), [90, 278])
         elif State != "start":
             pygame.draw.rect(screen, WHITE, [30, 205, 340, 90])
             message = "You Win!" if State == "won" else "Game Over"
