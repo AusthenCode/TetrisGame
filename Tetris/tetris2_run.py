@@ -127,7 +127,7 @@ def break_lines():
 
     if cleared > 0:
         play_sound(ClearSound)
-        
+
     # ADDED: Count cleared lines, increase the level, and stop at the goal.
     Lines += cleared
     Level = min(Lines // LINES_PER_LEVEL + 1, MAX_LEVEL)
@@ -287,6 +287,9 @@ def main():
                 elif event.key == pygame.K_p and State in ("start", "paused"):
                     State = "paused" if State == "start" else "start"
                     play_sound(PauseSound)
+                elif event.key == pygame.K_m:
+                    global SoundOn
+                    SoundOn = not SoundOn 
                 elif State == "start":
                     if event.key == pygame.K_UP:
                         rotate()
