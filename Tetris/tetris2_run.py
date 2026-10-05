@@ -35,6 +35,14 @@ Colors = [
 BLACK = (0, 0, 0)
 WHITE = (255, 255, 255)
 GRAY = (128, 128, 128)
+RAINBOW = (
+    (255, 0, 0),
+    (255, 127, 0),
+    (255, 255, 0),
+    (0, 200, 0),
+    (0, 100, 255),
+    (148, 0, 211),
+)
 
 # code smell - why use mutable list when tuple (immutable) is OK? Use immutable objects as much as possible
 Figures = [
@@ -46,8 +54,8 @@ Figures = [
     [[1, 4, 5, 6], [1, 4, 5, 9], [4, 5, 6, 9], [1, 5, 6, 9]],
     [[1, 2, 5, 6]],
 ]
-# CHANGED: Extra space below the board for simple control instructions.
-size = (400, 580)
+# Landscape window with room for the board and a controls panel.
+size = (760, 620)
 
 # ADDED: Clear 5 lines per level; finish all 3 levels to win.
 MAX_LEVEL = 3
@@ -60,6 +68,8 @@ FALL_TIMES = (600, 400, 200)
 Type = 0
 Color = 0
 Rotation = 0
+NextType = 0
+NextColor = 1
 
 State = "start" # "gameover" or "won" when the game ends.
 Field = []
@@ -68,10 +78,10 @@ Field = []
 Height = 0
 Width = 0
 # StartX/Y position in the screen
-StartX = 100
-StartY= 60
+StartX = 55
+StartY = 80
 # Block size
-Tzoom = 20 # code smell - bad name, can you guess Tzoom from its name? 
+Tzoom = 25
 # Shift left/right or up/down
 ShiftX = 0
 ShiftY = 0
@@ -82,11 +92,13 @@ Lines = 0
 # code smell - global variable access, refactor to use
 # parameters (if you use a function) or class fields (if you use a class)
 def make_figure(x, y):
-    global ShiftX, ShiftY, Type, Color, Rotation
+    global ShiftX, ShiftY, Type, Color, Rotation, NextType, NextColor
     ShiftX = x
     ShiftY = y
-    Type = random.randint(0, len(Figures) - 1)
-    Color = random.randint(1, len(Colors) - 1)
+    Type = NextType
+    Color = NextColor
+    NextType = random.randint(0, len(Figures) - 1)
+    NextColor = random.randint(1, len(Colors) - 1)
     Rotation = 0
 
 def intersects(image):
@@ -174,7 +186,7 @@ def init_board():
         Field.append(new_line)
 
 def draw_board(screen, x, y, zoom):
-    screen.fill(WHITE)
+    screen.fill(BLACK)
 
     for i in range(Height):
         for j in range(Width):
@@ -183,18 +195,49 @@ def draw_board(screen, x, y, zoom):
                 pygame.draw.rect(screen, Colors[Field[i][j]],
                                  [x + zoom * j + 1, y + zoom * i + 1, zoom - 2, zoom - 1])
 
-def draw_figure(screen, image, x, y, shift_x, shift_y, zoom):
+    board_width = Width * zoom
+    board_height = Height * zoom
+    segments = 12
+    for i in range(segments):
+        color = RAINBOW[i % len(RAINBOW)]
+        left = x + board_width * i // segments
+        right = x + board_width * (i + 1) // segments
+        top = y + board_height * i // segments
+        bottom = y + board_height * (i + 1) // segments
+        pygame.draw.line(screen, color, (left, y - 3), (right, y - 3), 4)
+        pygame.draw.line(screen, color, (left, y + board_height + 3), (right, y + board_height + 3), 4)
+        pygame.draw.line(screen, color, (x - 3, top), (x - 3, bottom), 4)
+        pygame.draw.line(screen, color, (x + board_width + 3, top), (x + board_width + 3, bottom), 4)
+
+def draw_figure(screen, image, x, y, shift_x, shift_y, zoom, color):
     for i in range(4):
         for j in range(4):
             p = i * 4 + j
             if p in image:
-                pygame.draw.rect(screen, Colors[Color],
+                pygame.draw.rect(screen, Colors[color],
                                  [x + zoom * (j + shift_x) + 1,
                                   y + zoom * (i + shift_y) + 1,
                                   zoom - 2, zoom - 2])
+
+def draw_next_piece(screen, image, color, left, top, zoom):
+    rows = [position // 4 for position in image]
+    columns = [position % 4 for position in image]
+    min_row, max_row = min(rows), max(rows)
+    min_column, max_column = min(columns), max(columns)
+    piece_width = (max_column - min_column + 1) * zoom
+    piece_height = (max_row - min_row + 1) * zoom
+    padding = 10
+    box_width = piece_width + padding * 2
+    box_height = piece_height + padding * 2
+    box = pygame.Rect(left, top, box_width, box_height)
+    pygame.draw.rect(screen, GRAY, box, 2)
+
+    figure_x = box.x + padding - min_column * zoom
+    figure_y = box.y + padding - min_row * zoom
+    draw_figure(screen, image, figure_x, figure_y, 0, 0, zoom, color)
             
 def initialize(height, width):
-    global Height, Width, Field, State, Score, Lines, Level
+    global Height, Width, Field, State, Score, Lines, Level, NextType, NextColor
     Height = height
     Width = width
     Field = []
@@ -203,6 +246,8 @@ def initialize(height, width):
     Score = 0
     Lines = 0
     Level = 1
+    NextType = random.randint(0, len(Figures) - 1)
+    NextColor = random.randint(1, len(Colors) - 1)
     # code smell - why another initializion in the initalize() function?
     init_board()
 
@@ -280,34 +325,46 @@ def main():
         draw_board(screen = screen, x = StartX, y = StartY, zoom = Tzoom)
         
         if State == "start":
-            draw_figure(screen = screen, image = Figures[Type][Rotation], x = StartX, y = StartY, shift_x = ShiftX, shift_y = ShiftY, zoom = Tzoom)
+            draw_figure(screen = screen, image = Figures[Type][Rotation], x = StartX, y = StartY, shift_x = ShiftX, shift_y = ShiftY, zoom = Tzoom, color = Color)
 
-        # ADDED: Show level progress and controls without covering the board.
-        text = font.render(f"Score: {Score}    Level: {Level}/{MAX_LEVEL}", True, BLACK)
+        # Show the score above the board and keep controls in a side panel.
+        text = font.render(f"Score: {Score}    Level: {Level}/{MAX_LEVEL}", True, WHITE)
         screen.blit(text, [15, 5])
         target = Level * LINES_PER_LEVEL
-        text = help_font.render(f"Lines: {Lines}/{target} - Clear {LINES_PER_LEVEL} per level", True, BLACK)
+        text = help_font.render(f"Lines: {Lines}/{target} - Clear {LINES_PER_LEVEL} per level", True, WHITE)
         screen.blit(text, [15, 32])
-        instructions = [
-            "Left / Right: move (hold to repeat)",
-            "Up: rotate    Down: soft drop (hold)",
-            "Space: drop instantly    Esc / Q: quit",
+        draw_next_piece(screen, Figures[NextType][0], NextColor, 322, 55, 20)
+        controls_rect = pygame.Rect(350, 165, 240, 296)
+        pygame.draw.rect(screen, GRAY, controls_rect, 2)
+        screen.blit(font.render("CONTROLS", True, WHITE), [375, 190])
+        instructions = (
+            "Hold Left / Right: Move",
+            "Up: Rotate",
+            "P: Pause / resume",
+            "Hold Down: Soft drop",
+            "Space: Drop instantly",
+            "Esc / Q: Quit",
             "Clear 15 lines to win!",
-        ]
+        )
         for i, instruction in enumerate(instructions):
-            screen.blit(help_font.render(instruction, True, BLACK), [15, 475 + i * 24])
+            screen.blit(help_font.render(instruction, True, WHITE), [375, 235 + i * 31])
 
         # CHANGED: Both endings stop play and offer a simple restart.
         if State == "paused":
-            pygame.draw.rect(screen,WHITE, [30, 205, 340, 110])
-            screen.blit(font.render("Paused", True, BLACK), [150, 215])
-            screen.blit(help_font.render("P: resume  R: restart", True, BLACK), [90, 255])
-            screen.blit(help_font.render("M: sound  Esc/Q: quit", True, BLACK), [90, 278])
+            title = font.render("Paused", True, WHITE)
+            prompt = help_font.render("P: resume  R: restart  Esc/Q: quit", True, WHITE)
+            title_rect = title.get_rect(center=(StartX + Width * Tzoom // 2, StartY + Height * Tzoom // 2 - 20))
+            prompt_rect = prompt.get_rect(center=(StartX + Width * Tzoom // 2, StartY + Height * Tzoom // 2 + 20))
+            screen.blit(title, title_rect)
+            screen.blit(prompt, prompt_rect)
         elif State != "start":
-            pygame.draw.rect(screen, WHITE, [30, 205, 340, 90])
             message = "You Win!" if State == "won" else "Game Over"
-            screen.blit(font.render(message, True, BLACK), [135, 215])
-            screen.blit(help_font.render("R: restart    Esc / Q: quit", True, BLACK), [100, 255])
+            title = font.render(message, True, WHITE)
+            prompt = help_font.render("R: restart    Esc / Q: quit", True, WHITE)
+            title_rect = title.get_rect(center=(StartX + Width * Tzoom // 2, StartY + Height * Tzoom // 2 - 20))
+            prompt_rect = prompt.get_rect(center=(StartX + Width * Tzoom // 2, StartY + Height * Tzoom // 2 + 20))
+            screen.blit(title, title_rect)
+            screen.blit(prompt, prompt_rect)
 
         # refresh the screen
         pygame.display.flip()
