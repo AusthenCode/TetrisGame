@@ -17,7 +17,6 @@ Team TBD/Hey Dude is continuing to develop a Tetris-inspired game that combines 
 - Added win and game-over restart functionality
 - Improved movement controls, including hold-to-move and soft drop
 - Added Next piece func and UI redesign
-- Updated the README with current controls and setup instructions
 
 ---
 
