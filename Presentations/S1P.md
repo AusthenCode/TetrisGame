@@ -10,7 +10,7 @@ Build a small, playable Tetris game that demonstrates the complete core gameplay
 
 ---
 
-## MVP Objective
+## Objective
 
 Deliver a working game in which a player can move and rotate falling pieces, clear completed rows, and reach a clear win or game-over state. With Functioning sound effects and UI.
 
@@ -53,7 +53,7 @@ Austin Shelton
 
 **UI design**
 
-![Tetris game UI](../pics/ui.png)
+<img src="../pics/ui.png" alt="Tetris game UI" width="600">
 
 ---
 
@@ -112,6 +112,14 @@ Basil Wazwaz
 
 ---
 
+## Code Totals
+
+- Line of Code: 1600~
+- Planned Features: 3/3
+- Planned Requirements: 9/9
+
+---
+
 ## Sprint 2 Goals
 
 - Build on the MVP with multiple levels and progressively faster gameplay
@@ -122,7 +130,7 @@ Basil Wazwaz
 
 ---
 
-## Team TBD/Hey Dude
+## What we did
 
 - Focus: Deliver the core game as one cohesive, playable MVP
 - Prioritize required gameplay and usability over optional polish
