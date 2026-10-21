@@ -59,10 +59,7 @@ Austin Shelton
 
 **Next piece preview**
 
-<video controls width="480">
-  <source src="../pics/next_piece.mp4" type="video/mp4">
-  Your browser does not support video playback.
-</video>
+[Watch next piece preview](../pics/next_piece.mp4)
 
 ---
 
@@ -81,19 +78,13 @@ Bebba Elmane
 
 **Pause**
 
-<video controls width="480">
-  <source src="../pics/pause.mp4" type="video/mp4">
-  Your browser does not support video playback.
-</video>
+[Watch pause demo](../pics/pause.mp4)
 
 ---
 
 **Sound**
 
-<video controls width="480">
-  <source src="../pics/sound.mp4" type="video/mp4">
-  Your browser does not support video playback.
-</video>
+[Watch sound demo](../pics/sound.mp4)
 
 ---
 
@@ -112,21 +103,24 @@ Basil Wazwaz
 
 **Drop**
 
-<video controls width="480">
-  <source src="../pics/drop.mp4" type="video/mp4">
-  Your browser does not support video playback.
-</video>
+[Watch drop demo](../pics/drop.mp4)
 
 ---
 
 **Win**
-<video controls width="480">
-  <source src="../pics/win.mp4" type="video/mp4">
-  Your browser does not support video playback.
-</video>
+[Watch win demo](../pics/win.mp4)
 
 ---
 
+## Sprint 2 Goals
+
+- Build on the MVP with multiple levels and progressively faster gameplay
+- Expand scoring with line-clear rewards and combo tracking
+- Add a ghost-piece preview and clearer line-clear feedback
+- Refine the menus, audio controls, and win/game-over flow
+- Playtest and balance difficulty, then fix issues found during testing
+
+---
 
 ## Team TBD/Hey Dude
 
