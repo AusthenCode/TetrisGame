@@ -137,3 +137,7 @@ Basil Wazwaz
 - Completed rows clear and update the score
 - The player can identify the next piece and understand when the game is won or over
 - The player can restart and play again
+
+## Thoughts
+
+- Questions?
