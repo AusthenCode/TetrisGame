@@ -12,15 +12,12 @@ Team TBD/Hey Dude is continuing the Sprint 1 goal of building a working Tetris p
 
 ## Weekly update
 
-- Continuing with more levels for player progression
-- Started working on settings and settings menu
-- Started working on the main menu
-
+- Started working on our features and progressing well on S2P
 ---
 
 ## Basil Wazwaz
 
-- Accomplished: Continued level progression logic and win-condition balancing
+- Accomplished: Started work on ghost piece
 - Lines of code: 400
 - Features met: 0/1
 - Requirements completed: 1/3
@@ -29,7 +26,7 @@ Team TBD/Hey Dude is continuing the Sprint 1 goal of building a working Tetris p
 
 ## Bebba Elmane
 
-- Accomplished: continued on quality of life aspects, and settings menu
+- Accomplished: started working on the global variables 
 - Lines of code: 520
 - Features met: 0/1
 - Requirements completed: 1/3
