@@ -1,9 +1,13 @@
 import pygame
 import random
+from game_state import GameState, MAX_LEVEL, LINES_PER_LEVEL
 
-#Sound setup (in try /except so missing/ broken audio device)
-#never crashes the game. Small, quiet effects only.
+# Sound setup: inside try/except so a missing or broken audio device
+# never crashes the game. Small, quiet effects only.
 SoundOn = True
+# Start as None so the names always exist, even if loading fails.
+ClearSound = None
+PauseSound = None
 try:
     pygame.mixer.init()
     ClearSound = pygame.mixer.Sound("Tetris/sounds/clear_line.mp3")
@@ -16,7 +20,8 @@ except Exception:
 def play_sound(sound):
     # Small helper so every place that wants to play
     # goes through one safe spot instead of repeating the check.
-    if SoundOn:
+    # Also skip if the sound failed to load (sound is None).
+    if SoundOn and sound is not None:
         sound.play()
     
 # Global constants - it's OK as it's read only
@@ -57,9 +62,8 @@ Figures = [
 # Landscape window with room for the board and a controls panel.
 size = (760, 620)
 
-# ADDED: Clear 5 lines per level; finish all 3 levels to win.
-MAX_LEVEL = 3
-LINES_PER_LEVEL = 5
+# Clear 5 lines per level; finish all 3 levels to win.
+# MAX_LEVEL and LINES_PER_LEVEL now come from game_state.py
 # CHANGED: Shorter drop delays make each new level noticeably faster.
 # Level 1: 0.6 seconds, level 2: 0.4 seconds, level 3: 0.2 seconds.
 FALL_TIMES = (600, 400, 200)
@@ -85,9 +89,8 @@ Tzoom = 25
 # Shift left/right or up/down
 ShiftX = 0
 ShiftY = 0
-Score = 0
-Level = 1
-Lines = 0
+# Score, Lines and Level now live in the GameState object.
+Game = GameState(sound_on=SoundOn)
 
 # code smell - global variable access, refactor to use
 # parameters (if you use a function) or class fields (if you use a class)
@@ -117,21 +120,21 @@ def intersects(image):
     return intersection
 
 def break_lines():
-    global Field, Score, Lines, Level, State
+    global Field, State
     # CHANGED: Remove full rows and add empty ones at the top.
     # This also clears the top row correctly without copying filled rows.
     remaining_rows = [row for row in Field if 0 in row]
     cleared = Height - len(remaining_rows)
     Field = [[0] * Width for _ in range(cleared)] + remaining_rows
-    Score += cleared ** 2
+
+    # Score, lines and level are updated inside GameState.
+    Game.add_cleared_lines(cleared)
 
     if cleared > 0:
         play_sound(ClearSound)
 
-    # ADDED: Count cleared lines, increase the level, and stop at the goal.
-    Lines += cleared
-    Level = min(Lines // LINES_PER_LEVEL + 1, MAX_LEVEL)
-    if Lines >= MAX_LEVEL * LINES_PER_LEVEL:
+    # Temporary bridge: State is still a global until we move it too.
+    if Game.state == "won":
         State = "won"
 
 def freeze(image):
@@ -237,22 +240,20 @@ def draw_next_piece(screen, image, color, left, top, zoom):
     draw_figure(screen, image, figure_x, figure_y, 0, 0, zoom, color)
             
 def initialize(height, width):
-    global Height, Width, Field, State, Score, Lines, Level, NextType, NextColor
+    global Height, Width, Field, State, NextType, NextColor
     Height = height
     Width = width
     Field = []
     State = "start"
-    # ADDED: Reset progress when starting or restarting.
-    Score = 0
-    Lines = 0
-    Level = 1
+    # Reset score, lines and level when starting or restarting.
+    Game.reset()
     NextType = random.randint(0, len(Figures) - 1)
     NextColor = random.randint(1, len(Colors) - 1)
     # code smell - why another initializion in the initalize() function?
     init_board()
 
 def main():
-    global State
+    global State, SoundOn
     # Pygame related init
     pygame.init()
     screen = pygame.display.set_mode(size)
@@ -288,8 +289,7 @@ def main():
                     State = "paused" if State == "start" else "start"
                     play_sound(PauseSound)
                 elif event.key == pygame.K_m:
-                    global SoundOn
-                    SoundOn = not SoundOn 
+                    SoundOn = not SoundOn
                 elif State == "start":
                     if event.key == pygame.K_UP:
                         rotate()
@@ -317,7 +317,7 @@ def main():
 
             # CHANGED: Hold down for controlled soft drop; levels get faster.
             fall_timer += elapsed
-            fall_delay = 60 if keys[pygame.K_DOWN] else FALL_TIMES[Level - 1]
+            fall_delay = 60 if keys[pygame.K_DOWN] else FALL_TIMES[Game.level - 1]
             if fall_timer >= fall_delay:
                 go_down()
                 fall_timer = 0
@@ -328,10 +328,10 @@ def main():
             draw_figure(screen = screen, image = Figures[Type][Rotation], x = StartX, y = StartY, shift_x = ShiftX, shift_y = ShiftY, zoom = Tzoom, color = Color)
 
         # Show the score above the board and keep controls in a side panel.
-        text = font.render(f"Score: {Score}    Level: {Level}/{MAX_LEVEL}", True, WHITE)
+        text = font.render(f"Score: {Game.score}    Level: {Game.level}/{MAX_LEVEL}", True, WHITE)
         screen.blit(text, [15, 5])
-        target = Level * LINES_PER_LEVEL
-        text = help_font.render(f"Lines: {Lines}/{target} - Clear {LINES_PER_LEVEL} per level", True, WHITE)
+        target = Game.level * LINES_PER_LEVEL
+        text = help_font.render(f"Lines: {Game.lines}/{target} - Clear {LINES_PER_LEVEL} per level", True, WHITE)
         screen.blit(text, [15, 32])
         draw_next_piece(screen, Figures[NextType][0], NextColor, 322, 55, 20)
         controls_rect = pygame.Rect(350, 165, 240, 296)
