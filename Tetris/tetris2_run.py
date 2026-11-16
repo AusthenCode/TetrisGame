@@ -76,7 +76,6 @@ Rotation = 0
 NextType = 0
 NextColor = 1
 
-State = "start" # "gameover" or "won" when the game ends.
 Field = []
 
 # Tetris block Height and Width
@@ -90,7 +89,8 @@ Tzoom = 25
 # Shift left/right or up/down
 ShiftX = 0
 ShiftY = 0
-# Score, Lines, Level and the sound on/off flag live in the GameState object.
+# Score, Lines, Level, the game state and the sound on/off flag
+# all live in the GameState object.
 Game = GameState()
 
 # code smell - global variable access, refactor to use
@@ -121,7 +121,7 @@ def intersects(image):
     return intersection
 
 def break_lines():
-    global Field, State
+    global Field
     # CHANGED: Remove full rows and add empty ones at the top.
     # This also clears the top row correctly without copying filled rows.
     remaining_rows = [row for row in Field if 0 in row]
@@ -129,28 +129,25 @@ def break_lines():
     Field = [[0] * Width for _ in range(cleared)] + remaining_rows
 
     # Score, lines and level are updated inside GameState.
+    # It also switches the state to "won" after the last level.
     Game.add_cleared_lines(cleared)
 
     if cleared > 0:
         play_sound(ClearSound)
 
-    # Temporary bridge: State is still a global until we move it too.
-    if Game.state == "won":
-        State = "won"
-
 def freeze(image):
     # code smell - can you guess what it does? why there is no comments on what it does, how, and why?
-    global Field, State
+    global Field
     for i in range(4):
         for j in range(4):
             if i * 4 + j in image:
                 Field[i + ShiftY][j + ShiftX] = Color
     break_lines()
-    if State == "won": # ADDED: Do not spawn another piece after winning.
+    if Game.state == "won": # ADDED: Do not spawn another piece after winning.
         return
     make_figure(3, 0) 
     if intersects(Figures[Type][Rotation]):
-        State = "gameover"
+        Game.set_state("gameover")
 
 def go_space():
     global ShiftY
@@ -241,12 +238,11 @@ def draw_next_piece(screen, image, color, left, top, zoom):
     draw_figure(screen, image, figure_x, figure_y, 0, 0, zoom, color)
             
 def initialize(height, width):
-    global Height, Width, Field, State, NextType, NextColor
+    global Height, Width, Field, NextType, NextColor
     Height = height
     Width = width
     Field = []
-    State = "start"
-    # Reset score, lines and level when starting or restarting.
+    # Reset state, score, lines and level when starting or restarting.
     Game.reset()
     NextType = random.randint(0, len(Figures) - 1)
     NextColor = random.randint(1, len(Colors) - 1)
@@ -254,7 +250,6 @@ def initialize(height, width):
     init_board()
 
 def main():
-    global State
     # Pygame related init
     pygame.init()
     screen = pygame.display.set_mode(size)
@@ -281,17 +276,17 @@ def main():
                 # Added: Quit any time; restart after winning or losing
                 if event.key in (pygame.K_ESCAPE, pygame.K_q):
                     done = True
-                elif event.key == pygame.K_r and State in ("gameover", "won", "paused"):
+                elif event.key == pygame.K_r and Game.state in ("gameover", "won", "paused"):
                     initialize(20, 10)
                     make_figure(3, 0)
                     fall_timer = 0
                     move_timer = 0
-                elif event.key == pygame.K_p and State in ("start", "paused"):
-                    State = "paused" if State == "start" else "start"
+                elif event.key == pygame.K_p and Game.state in ("start", "paused"):
+                    Game.toggle_pause()
                     play_sound(PauseSound)
                 elif event.key == pygame.K_m:
                     Game.toggle_sound()
-                elif State == "start":
+                elif Game.state == "start":
                     if event.key == pygame.K_UP:
                         rotate()
                     if event.key == pygame.K_LEFT:
@@ -306,7 +301,7 @@ def main():
         if done:
             break
 
-        if State == "start":
+        if Game.state == "start":
             # Added: Hold left/ right to repeat, with a short initial delay.
             # Rotation and hard drop still happen only once per key press.
             keys = pygame.key.get_pressed()
@@ -325,7 +320,7 @@ def main():
 
         draw_board(screen = screen, x = StartX, y = StartY, zoom = Tzoom)
         
-        if State == "start":
+        if Game.state == "start":
             draw_figure(screen = screen, image = Figures[Type][Rotation], x = StartX, y = StartY, shift_x = ShiftX, shift_y = ShiftY, zoom = Tzoom, color = Color)
 
         # Show the score above the board and keep controls in a side panel.
@@ -351,15 +346,15 @@ def main():
             screen.blit(help_font.render(instruction, True, WHITE), [375, 235 + i * 31])
 
         # CHANGED: Both endings stop play and offer a simple restart.
-        if State == "paused":
+        if Game.state == "paused":
             title = font.render("Paused", True, WHITE)
             prompt = help_font.render("P: resume  R: restart  Esc/Q: quit", True, WHITE)
             title_rect = title.get_rect(center=(StartX + Width * Tzoom // 2, StartY + Height * Tzoom // 2 - 20))
             prompt_rect = prompt.get_rect(center=(StartX + Width * Tzoom // 2, StartY + Height * Tzoom // 2 + 20))
             screen.blit(title, title_rect)
             screen.blit(prompt, prompt_rect)
-        elif State != "start":
-            message = "You Win!" if State == "won" else "Game Over"
+        elif Game.state != "start":
+            message = "You Win!" if Game.state == "won" else "Game Over"
             title = font.render(message, True, WHITE)
             prompt = help_font.render("R: restart    Esc / Q: quit", True, WHITE)
             title_rect = title.get_rect(center=(StartX + Width * Tzoom // 2, StartY + Height * Tzoom // 2 - 20))
