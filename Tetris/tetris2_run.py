@@ -4,7 +4,6 @@ from game_state import GameState, MAX_LEVEL, LINES_PER_LEVEL
 
 # Sound setup: inside try/except so a missing or broken audio device
 # never crashes the game. Small, quiet effects only.
-SoundOn = True
 # Start as None so the names always exist, even if loading fails.
 ClearSound = None
 PauseSound = None
@@ -15,13 +14,15 @@ try:
     ClearSound.set_volume(0.3)
     PauseSound.set_volume(0.3)
 except Exception:
-    SoundOn = False
+    ClearSound = None
+    PauseSound = None
 
 def play_sound(sound):
     # Small helper so every place that wants to play
     # goes through one safe spot instead of repeating the check.
-    # Also skip if the sound failed to load (sound is None).
-    if SoundOn and sound is not None:
+    # Plays only if the player has not muted (M key)
+    # and the sound loaded correctly (sound is not None).
+    if Game.sound_on and sound is not None:
         sound.play()
     
 # Global constants - it's OK as it's read only
@@ -89,8 +90,8 @@ Tzoom = 25
 # Shift left/right or up/down
 ShiftX = 0
 ShiftY = 0
-# Score, Lines and Level now live in the GameState object.
-Game = GameState(sound_on=SoundOn)
+# Score, Lines, Level and the sound on/off flag live in the GameState object.
+Game = GameState()
 
 # code smell - global variable access, refactor to use
 # parameters (if you use a function) or class fields (if you use a class)
@@ -253,7 +254,7 @@ def initialize(height, width):
     init_board()
 
 def main():
-    global State, SoundOn
+    global State
     # Pygame related init
     pygame.init()
     screen = pygame.display.set_mode(size)
@@ -289,7 +290,7 @@ def main():
                     State = "paused" if State == "start" else "start"
                     play_sound(PauseSound)
                 elif event.key == pygame.K_m:
-                    SoundOn = not SoundOn
+                    Game.toggle_sound()
                 elif State == "start":
                     if event.key == pygame.K_UP:
                         rotate()
